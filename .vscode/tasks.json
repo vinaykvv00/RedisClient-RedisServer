@@ -1,0 +1,50 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build server",
+            "type": "shell",
+            "command": "mkdir -p build && g++ -std=c++17 -g -O0 -Wall -Wextra -pthread -IRedis-Server/include Redis-Server/src/*.cpp -o build/redis-server",
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build client",
+            "type": "shell",
+            "command": "mkdir -p build && g++ -std=c++17 -g -O0 -Wall -Wextra -IRedis-Client/include Redis-Client/main.cpp Redis-Client/src/*.cpp -o build/redis-client",
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build all",
+            "dependsOn": ["build server", "build client"],
+            "dependsOrder": "sequence",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "run server",
+            "type": "shell",
+            "command": "${workspaceFolder}/build/redis-server",
+            "dependsOn": "build server",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "run client",
+            "type": "shell",
+            "command": "${workspaceFolder}/build/redis-client",
+            "dependsOn": "build client",
+            "problemMatcher": []
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "rm -rf build",
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": []
+        }
+    ]
+}
