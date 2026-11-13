@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 // RESP request format: an array of bulk strings.
 //   *3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n
@@ -71,7 +72,9 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
     // use resp protocal parser
     auto tokens = parseRespCommand(commandLine);
     if (tokens.empty()) return "-ERR empty command\r\n";
-    std::string command = tokens[0];
+    for (auto& t : tokens) {
+        std::cout<< t << std::endl;
+    }
 
     std::string cmd = tokens[0];
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
