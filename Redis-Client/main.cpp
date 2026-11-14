@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     // Parse command-line args for -h and -p
     while (i < argc) {
         std::string arg = argv[i];
-        if (arg == "-h" && i + 1 < argc) {// -h 127.0.0.1
+        if (arg == "-h" && i + 1 < argc) {  // -h 127.0.0.1
             host = argv[++i];
         } else if (arg == "-p" && i + 1 < argc) {
             port = std::stoi(argv[++i]);
