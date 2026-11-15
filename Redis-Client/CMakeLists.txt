@@ -17,6 +17,7 @@ add_executable(redis-client
     main.cpp
     src/CLI.cpp
     src/RedisClient.cpp
+    src/CommandHandler.cpp
 )
 
 # Headers live in include/ (CLI.hpp, RedisClient.hpp)

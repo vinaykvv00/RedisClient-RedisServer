@@ -2,6 +2,7 @@
 #define CLI_HPP
 #include <string>
 
+#include "CommandHandler.hpp"
 #include "RedisClient.hpp"
 
 class CLI {

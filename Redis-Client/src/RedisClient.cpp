@@ -53,3 +53,7 @@ void RedisClient::disconnectFromServer() {
         sockfd_ = -1;
     }
 }
+
+int RedisClient::getSocketFD() const {
+    return sockfd_;
+}

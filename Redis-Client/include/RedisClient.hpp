@@ -15,6 +15,7 @@ public:
 
     bool connectToServer();
     void disconnectFromServer();
+    int getSocketFD() const;
 
 private:
     std::string host_;
