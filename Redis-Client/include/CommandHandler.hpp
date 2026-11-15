@@ -8,6 +8,9 @@ public:
     // split the command into tokens
     static std::vector<std::string> splitArgs(const std::string& command);
 
+    //build the RESP commands from the vector of arguments
+    static std::string buildRESPCommand(const std::vector<std::string>& args);
+
 private:
 };
 

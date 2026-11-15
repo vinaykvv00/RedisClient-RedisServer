@@ -57,3 +57,34 @@ void RedisClient::disconnectFromServer() {
 int RedisClient::getSocketFD() const {
     return sockfd_;
 }
+
+/*commandLen = 14, totalSent = 0
+iter 1: send(fd, buf+0, 14) → 14
+        totalSent = 14
+        loop condition: 14 < 14 → false → exit
+return true
+---------------
+commandLen = 100000, totalSent = 0
+iter 1: send(fd, buf+0,     100000) → 65536   totalSent = 65536
+iter 2: send(fd, buf+65536,  34464) → 34464   totalSent = 100000
+        loop: 100000 < 100000 → false → exit
+return true
+*/
+
+bool RedisClient::sendCommand(const std::string& command) {
+    if (sockfd_ == -1) {
+        std::cerr << "Socket is not connected." << std::endl;
+        return false;
+    }
+    ssize_t totalSent = 0;
+    ssize_t commandLen = command.size();
+    while (totalSent < commandLen) {
+        ssize_t sent = send(sockfd_, command.c_str() + totalSent, commandLen - totalSent, 0);
+        if (sent == -1) {
+            std::cerr << "Failed to send command." << std::endl;
+            return false;
+        }
+        totalSent += sent;
+    }
+    return true;
+}

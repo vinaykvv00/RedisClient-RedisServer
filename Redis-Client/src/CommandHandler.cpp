@@ -19,3 +19,22 @@ std::vector<std::string> CommandHandler::splitArgs(const std::string& inputs) {
     }
     return tokens;
 }
+
+/*
+ * Build a RESP command from the vector of arguments.
+ * Each argument is prefixed with its length and the command is formatted according to the RESP protocol.
+ * -> start an array
+ * -> bulk of string
+ * -> repeat for each argument
+ *  //example: if args = {"SET", "key", "value"}, the RESP command will be:
+    // *3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n
+ */
+
+std::string CommandHandler::buildRESPCommand(const std::vector<std::string>& args) {
+    std::ostringstream oss;               // ostringstream means we can build the RESP command as a string stream
+    oss << "*" << args.size() << "\r\n";  // start an array with the number of arguments
+    for (const auto& arg : args) {
+        oss << "$" << arg.size() << "\r\n" << arg << "\r\n";  // bulk string with its length and content
+    }
+    return oss.str();
+}
