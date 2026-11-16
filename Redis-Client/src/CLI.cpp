@@ -61,6 +61,8 @@ void CLI::run() {
             std::cerr << "Failed to send command." << std::endl;
         }
         // parse and print the message
+        std::string response = ResponseParser::parseResponse(redisClient_.getSocketFD());
+        std::cout << response << std::endl;
     }
 }
 // End of CLI::run()

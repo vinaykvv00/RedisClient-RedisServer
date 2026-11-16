@@ -4,6 +4,7 @@
 
 #include "CommandHandler.hpp"
 #include "RedisClient.hpp"
+#include "ResponseParser.hpp"
 
 class CLI {
 public:
