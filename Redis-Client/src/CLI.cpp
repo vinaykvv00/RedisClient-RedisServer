@@ -18,9 +18,21 @@ std::string trim(const std::string& value) {
 }
 }  // anonymous namespace
 
-CLI::CLI(const std::string& host, int port) : redisClient_(host, port) {}
+CLI::CLI(const std::string& host, int port) : redisClient_(host, port), host_(host), port_(port) {}
 
-void CLI::run() {
+void CLI::executeCommand(const std::vector<std::string>& commandArgs) {
+    if (commandArgs.empty()) return;
+
+    std::string command = CommandHandler::buildRESPCommand(commandArgs);
+    if (!redisClient_.sendCommand(command)) {
+        std::cerr << "Failed to send command." << std::endl;
+        return;
+    }
+    std::string response = ResponseParser::parseResponse(redisClient_.getSocketFD());
+    std::cout << response << std::endl;
+}  // End of CLI::executeCommand()
+
+void CLI::run(const std::vector<std::string>& commandArgs) {
     if (!redisClient_.connectToServer()) {
         std::cerr << "Failed to connect to Redis server." << std::endl;
         return;
@@ -28,11 +40,14 @@ void CLI::run() {
 
     std::cout << "Connected to Redis server." << std::endl;
     std::cout << "Socket FD: " << redisClient_.getSocketFD() << std::endl;
-    std::string host = "127.0.0.1";
-    int port = 6379;  // default Redis port
+
+    if (!commandArgs.empty()) {
+        executeCommand(commandArgs);
+        return;
+    }
 
     while (true) {
-        std::cout << host << ":" << port << "> ";
+        std::cout << host_ << ":" << port_ << "> ";
         std::cout.flush();
         std::string line;
         if (!std::getline(std::cin, line)) break;

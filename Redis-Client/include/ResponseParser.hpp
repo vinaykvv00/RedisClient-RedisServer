@@ -10,10 +10,10 @@ public:
 
 private:
     static std::string parseSimpleString(int sockfd);
-    // static std::string parseSimpleError(int sockfd);
-    // static std::string parseInteger(int sockfd);
-    // static std::string parseBulkString(int sockfd);
-    // static std::string parseArray(int sockfd);
+    static std::string parseSimpleError(int sockfd);
+    static std::string parseInteger(int sockfd);
+    static std::string parseBulkString(int sockfd);
+    static std::string parseArray(int sockfd);
 };
 
 #endif  // RESPONSE_PARSER_HPP
