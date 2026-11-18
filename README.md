@@ -45,6 +45,26 @@ With a Redis server already listening on `127.0.0.1:6379`:
 The client uses a server; it does not start one. It currently prints connection
 information as well as command results.
 
+## Build the experimental server
+
+The server uses the same C++17/CMake prerequisites and links the platform thread
+support through CMake's `Threads::Threads` target.
+
+From the repository root:
+
+```bash
+cmake -S Redis-Server -B Redis-Server/build
+cmake --build Redis-Server/build
+```
+
+The executable is `Redis-Server/build/redis-server`. Its optional port argument
+is positional (for example, `./Redis-Server/build/redis-server 6380`), unlike the
+client's `-p` option; the default is `6379`. Use an unused port.
+
+The current server binds to all IPv4 interfaces. Run it only in an isolated
+development environment with appropriate network restrictions. Building it does
+not complete command execution or persistence.
+
 ## Documentation
 
 - [Client overview and feature status](Redis-Client/README.md)
