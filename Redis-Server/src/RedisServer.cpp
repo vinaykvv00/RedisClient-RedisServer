@@ -97,14 +97,14 @@ void RedisServer::run() {
     }
 }
 
-// before the shutdown , persist the data to disk if needed
-if (RedisDatabase::getInstance().dump("dump.rdb")) {
-    std::cout << "Data persisted to disk successfully." << std::endl;
-} else {
-    std::cerr << "Failed to persist data to disk." << std::endl;
-}
-
 void RedisServer::shutdown() {
+    // before the shutdown , persist the data to disk if needed
+    if (RedisDatabase::getInstance().dump("dump.rdb")) {
+        std::cout << "Data persisted to disk successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to persist data to disk." << std::endl;
+    }
+
     running = false;
     if (server_socket != -1) {
         close(server_socket);

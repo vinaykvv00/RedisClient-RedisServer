@@ -18,6 +18,7 @@ private:
 
     // setup singnal for graceful shutdown ctrl+c (SIGINT)
     void setupSignalHandler();
+    static void signalHandler(int signum);
     
 };
 
