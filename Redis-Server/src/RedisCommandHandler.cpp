@@ -1,10 +1,12 @@
 #include "../include/RedisCommandHandler.hpp"
 
+#include <algorithm>
 #include <charconv>
+#include <iostream>
 #include <sstream>
 #include <vector>
-#include <algorithm>
-#include <iostream>
+
+#include "../include/RedisDatabase.hpp"
 
 // RESP request format: an array of bulk strings.
 //   *3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n
@@ -72,16 +74,39 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
     // use resp protocal parser
     auto tokens = parseRespCommand(commandLine);
     if (tokens.empty()) return "-ERR empty command\r\n";
-    for (auto& t : tokens) {
-        std::cout<< t << std::endl;
-    }
+
+    std::cout << "Received command: " << commandLine << std::endl;
+
+    // for debug
+    //  for (auto& t : tokens) {
+    //      std::cout << t << std::endl;
+    //  }
 
     std::string cmd = tokens[0];
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
     std::ostringstream response;
 
-    //connect to database
+    // connect to database
+    RedisDatabase& db = RedisDatabase::getInstance();
 
-    //check command and arguments
+    // check command and arguments
+    if (cmd == "PING") {
+        if (tokens.size() == 1) {
+            response << "+PONG\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for 'PING' command\r\n";
+        }
+    } else if (cmd == "ECHO") {
+        if (tokens.size() == 2) {
+            response << "+" << tokens[1] << "\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for 'ECHO' command\r\n";
+        }
+    }
+    // key valuse operations, list , hash
+    else {
+        response << "-ERR unknown command '" << cmd << "'\r\n";
+    }
+
     return response.str();
 }

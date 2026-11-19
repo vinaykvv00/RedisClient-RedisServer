@@ -1,8 +1,8 @@
 #ifndef REDIS_SERVER_HPP
 #define REDIS_SERVER_HPP
 
-#include <string>
 #include <atomic>
+#include <string>
 
 class RedisServer {
 public:
@@ -15,6 +15,10 @@ private:
     int port;
     int server_socket;
     std::atomic<bool> running;
+
+    // setup singnal for graceful shutdown ctrl+c (SIGINT)
+    void setupSignalHandler();
+    
 };
 
-#endif // REDIS_SERVER_HPP
+#endif  // REDIS_SERVER_HPP
