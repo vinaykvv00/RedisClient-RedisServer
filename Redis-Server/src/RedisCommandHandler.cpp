@@ -102,9 +102,70 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
         } else {
             response << "-ERR wrong number of arguments for 'ECHO' command\r\n";
         }
+    } else if (cmd == "FLUSHALL") {
+        db.flushAll();
+        response << "+OK\r\n";
     }
-    // key valuse operations, list , hash
-    else {
+    // key valuse operations
+    else if (cmd == "SET") {
+        if (tokens.size() >= 3) {
+            db.set(tokens[1], tokens[2]);
+            response << "+OK\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for 'SET' command\r\n";
+        }
+    } else if (cmd == "GET") {
+        if (tokens.size() == 2) {
+            std::string value;
+            if (db.get(tokens[1], value)) {
+                response << "$" << value.size() << "\r\n" << value << "\r\n";
+            } else {
+                response << "$-1\r\n";
+            }
+        } else {
+            response << "-ERR wrong number of arguments for 'GET' command\r\n";
+        }
+    } else if (cmd == "KEYS") {
+        if (tokens.size() == 1) {
+            auto allKeys = db.keys();
+            response << "*" << allKeys.size() << "\r\n";
+            for (const auto& key : allKeys) {
+                response << "$" << key.size() << "\r\n" << key << "\r\n";
+            }
+        } else {
+            response << "-ERR wrong number of arguments for 'KEYS' command\r\n";
+        }
+    } else if (cmd == "TYPE") {
+        if (tokens.size() == 2) {
+            std::string type = db.type(tokens[1]);
+            response << "+" << type << "\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for 'TYPE' command\r\n";
+        }
+    } else if (cmd == "DEL" || cmd == "UNLINK") {
+        if (tokens.size() == 2) {
+            bool deleted = db.del(tokens[1]);
+            response << ":" << (deleted ? 1 : 0) << "\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for '" << cmd << "' command\r\n";
+        }
+    } else if (cmd == "EXPIRE") {
+        if (tokens.size() == 3) {
+            std::string key = tokens[1];
+            std::string seconds = tokens[2];
+            bool success = db.expire(key, seconds);
+            response << ":" << (success ? 1 : 0) << "\r\n";
+        } else {
+            response << "-ERR wrong number of arguments for 'EXPIRE' command\r\n";
+        }
+    } else if (cmd == "RENAME") {
+        if (tokens.size() == 3) {
+            bool success = db.rename(tokens[1], tokens[2]);
+            response << (success ? "+OK\r\n" : "-ERR no such key\r\n");
+        } else {
+            response << "-ERR wrong number of arguments for 'RENAME' command\r\n";
+        }
+    } else {
         response << "-ERR unknown command '" << cmd << "'\r\n";
     }
 
