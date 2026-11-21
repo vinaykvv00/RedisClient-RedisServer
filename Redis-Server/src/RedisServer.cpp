@@ -4,18 +4,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <../include/RedisCommandHandler.hpp>
-#include <../include/RedisDatabase.hpp>
-#include <../include/RedisServer.hpp>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>  // For memset
 #include <iostream>
-#include <memory>  // For std::shared_ptr if needed
 #include <thread>  // For std::thread
 #include <vector>  // For std::vector
 
 #include "../include/RedisCommandHandler.hpp"
 #include "../include/RedisDatabase.hpp"
+#include "../include/RedisServer.hpp"
 
 static RedisServer* globalServer = nullptr;
 
@@ -35,6 +33,7 @@ void RedisServer::setupSignalHandler() {
 
 RedisServer::RedisServer(int port) : port(port), server_socket(-1), running(true) {
     globalServer = this;
+    setupSignalHandler();
 }
 
 void RedisServer::run() {
@@ -84,7 +83,8 @@ void RedisServer::run() {
                     }
                     std::string request(buffer, bytes);
                     std::string response = cmdHandler.processCommand(request);
-                    send(client_socket, response.c_str(), response.size(), 0);
+                    // MSG_NOSIGNAL: a client that disconnected must not kill the server with SIGPIPE
+                    send(client_socket, response.c_str(), response.size(), MSG_NOSIGNAL);
                 }
                 close(client_socket);  // Close the client socket after handling the client
             });

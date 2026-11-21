@@ -12,7 +12,7 @@ public:
     static RedisDatabase& getInstance();
 
     // common commands
-    void flushAll();
+    bool flushAll();
 
     // key value operations
     void set(const std::string& key, const std::string& value);
@@ -23,7 +23,7 @@ public:
     bool del(const std::string& key);
 
     // Expire operations
-    bool expire(const std::string& key, const std::string& seconds);
+    bool expire(const std::string& key, int seconds);
 
     // rename
     bool rename(const std::string& oldKey, const std::string& newKey);

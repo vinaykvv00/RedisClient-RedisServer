@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -8,6 +9,12 @@
 int main(int argc, char* argv[]) {
     int port = 6379;  // default
     if (argc >= 2) port = std::stoi(argv[1]);
+
+    if (RedisDatabase::getInstance().load("dump.rdb")) {
+        std::cout << "Database loaded successfully." << std::endl;
+    } else {
+        std::cout << "No existing database found or failed to load." << std::endl;
+    }
 
     RedisServer server(port);
 

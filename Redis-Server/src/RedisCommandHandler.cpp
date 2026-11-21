@@ -108,7 +108,7 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
     }
     // key valuse operations
     else if (cmd == "SET") {
-        if (tokens.size() >= 3) {
+        if (tokens.size() == 3) {
             db.set(tokens[1], tokens[2]);
             response << "+OK\r\n";
         } else {
@@ -152,7 +152,7 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
     } else if (cmd == "EXPIRE") {
         if (tokens.size() == 3) {
             std::string key = tokens[1];
-            std::string seconds = tokens[2];
+            int seconds = std::stoi(tokens[2]);
             bool success = db.expire(key, seconds);
             response << ":" << (success ? 1 : 0) << "\r\n";
         } else {
