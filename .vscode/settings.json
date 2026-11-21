@@ -39,5 +39,12 @@
     },
     "search.exclude": {
         "**/build": true
-    }
+    },
+    "chat.checkpoints.enabled": true,
+    "chat.checkpoints.showFileChanges": true,
+    "chat.editing.autoAcceptDelay": 0,
+    "chat.editing.confirmEditRequestRemoval": true,
+    "chat.editing.revealNextChangeOnResolve": true,
+    "chat.tools.terminal.outputLocation": "chat",
+    "chat.tools.terminal.outputReflow": true
 }
