@@ -136,6 +136,73 @@ std::string handleRename(RedisDatabase& db, const CommandArgs& tokens) {
     return db.rename(tokens[1], tokens[2]) ? "+OK\r\n" : "-ERR no such key\r\n";
 }
 
+constexpr auto wrongListType = "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n";
+constexpr auto invalidListInteger = "-ERR value is not an integer or out of range\r\n";
+using ListResult = RedisDatabase::ListResult;
+
+bool parseListInteger(const std::string& token, int& value) {
+    const auto end = token.data() + token.size();
+    const auto result = std::from_chars(token.data(), end, value);
+    return result.ec == std::errc() && result.ptr == end;
+}
+
+std::string listIntegerReply(ssize_t result) {
+    if (result < 0) return wrongListType;
+    return ":" + std::to_string(result) + "\r\n";
+}
+
+std::string listValueReply(ListResult result, const std::string& value) {
+    if (result == ListResult::WrongType) return wrongListType;
+    if (result != ListResult::Ok) return "$-1\r\n";
+    return "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
+}
+
+std::string handleLLen(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 2) return wrongArgumentCount("LLEN");
+    return listIntegerReply(db.llen(tokens[1]));
+}
+
+std::string handleListPush(RedisDatabase& db, const CommandArgs& tokens, const std::string& cmd) {
+    if (tokens.size() != 3) return wrongArgumentCount(cmd);
+    const auto length = cmd == "LPUSH" ? db.lpush(tokens[1], tokens[2]) : db.rpush(tokens[1], tokens[2]);
+    return listIntegerReply(length);
+}
+
+std::string handleListPop(RedisDatabase& db, const CommandArgs& tokens, const std::string& cmd) {
+    if (tokens.size() != 2) return wrongArgumentCount(cmd);
+    std::string value;
+    const auto result = cmd == "LPOP" ? db.lpop(tokens[1], value) : db.rpop(tokens[1], value);
+    return listValueReply(result, value);
+}
+
+std::string handleLRem(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 4) return wrongArgumentCount("LREM");
+    int count = 0;
+    if (!parseListInteger(tokens[2], count)) return invalidListInteger;
+    return listIntegerReply(db.lrem(tokens[1], count, tokens[3]));
+}
+
+std::string handleLIndex(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 3) return wrongArgumentCount("LINDEX");
+    int index = 0;
+    if (!parseListInteger(tokens[2], index)) return invalidListInteger;
+    std::string value;
+    const auto result = db.lindex(tokens[1], index, value);
+    return listValueReply(result, value);
+}
+
+std::string handleLSet(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 4) return wrongArgumentCount("LSET");
+    int index = 0;
+    if (!parseListInteger(tokens[2], index)) return invalidListInteger;
+
+    const auto result = db.lset(tokens[1], index, tokens[3]);
+    if (result == ListResult::WrongType) return wrongListType;
+    if (result == ListResult::Missing) return "-ERR no such key\r\n";
+    if (result == ListResult::OutOfRange) return "-ERR index out of range\r\n";
+    return "+OK\r\n";
+}
+
 }  // namespace
 
 RedisCommandHandler::RedisCommandHandler() = default;
@@ -162,5 +229,11 @@ std::string RedisCommandHandler::processCommand(const std::string& commandLine) 
     if (cmd == "DEL" || cmd == "UNLINK") return handleDel(db, tokens, cmd);
     if (cmd == "EXPIRE") return handleExpire(db, tokens);
     if (cmd == "RENAME") return handleRename(db, tokens);
+    if (cmd == "LLEN") return handleLLen(db, tokens);
+    if (cmd == "LPUSH" || cmd == "RPUSH") return handleListPush(db, tokens, cmd);
+    if (cmd == "LPOP" || cmd == "RPOP") return handleListPop(db, tokens, cmd);
+    if (cmd == "LREM") return handleLRem(db, tokens);
+    if (cmd == "LINDEX") return handleLIndex(db, tokens);
+    if (cmd == "LSET") return handleLSet(db, tokens);
     return "-ERR unknown command '" + cmd + "'\r\n";
 }

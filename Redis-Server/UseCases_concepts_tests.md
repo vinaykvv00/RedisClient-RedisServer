@@ -70,8 +70,8 @@
 
 ### List Operations
 
-- **LGET**  
-  *Use case:* Returns all elements of a list at a given key (much like LRANGE key 0 -1 in real Redis).
+The server accepts one value per push and pops one value at a time.
+`LGET` and `LRANGE` are not implemented.
 
 - **LLEN**  
   *Use case:* Check the number of items in a message queue. For instance, determine how many tasks are pending in a job queue.
@@ -168,15 +168,23 @@ redis-cli -p 6379
 
 ### 5. List Operations
 
-| Command            | Example                                                           | Expected Reply                    |
-| ------------------ | ----------------------------------------------------------------- | --------------------------------- |
-| **LGET**           | `RPUSH L a b c`<br>`LGET L`                                       | `1) "a"`<br>`2) "b"`<br>`3) "c"`   |
-| **LLEN**           | `LLEN L`                                                          | `(integer) 3`                     |
-| **LPUSH / RPUSH**  | `LPUSH L "start"`<br>`RPUSH L "end"`                              | `(integer) 4`<br>`(integer) 5`    |
-| **LPOP / RPOP**    | `LPOP L`<br>`RPOP L`                                              | `"start"`<br>`"end"`              |
-| **LREM**           | `RPUSH L x y x z x`<br>`LREM L 2 x`<br>`LREM L 0 x`               | `(integer) 2`<br>`(integer) <n>`  |
-| **LINDEX**         | `LINDEX L 1`<br>`LINDEX L -1`                                     | `"y"`<br>`"z"`                    |
-| **LSET**           | `LSET L 1 "new_val"`<br>`LINDEX L 1`                              | `OK`<br>`"new_val"`               |
+Run these in order, starting with an unused key `demo:list`:
+
+| Command | Expected result |
+| --- | --- |
+| `RPUSH demo:list banana` | `1` |
+| `LPUSH demo:list apple` | `2` |
+| `RPUSH demo:list apple` | `3` |
+| `LLEN demo:list` | `3` |
+| `LREM demo:list -1 apple` | `1` (remove from the tail) |
+| `LINDEX demo:list -1` | `banana` |
+| `LSET demo:list 0 mango` | `OK` |
+| `LPOP demo:list` | `mango` |
+| `RPOP demo:list` | `banana` |
+| `LLEN demo:list` | `0` |
+
+`LREM` with a positive count searches from the head; `0` removes every match.
+Removing the last item removes the list key.
 
 ---
 
