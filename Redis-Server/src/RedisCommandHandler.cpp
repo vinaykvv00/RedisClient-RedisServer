@@ -65,109 +65,102 @@ std::vector<std::string> parseRespCommand(const std::string& input) {
     return tokens;
 }
 
+namespace {
+
+using CommandArgs = std::vector<std::string>;
+
+std::string wrongArgumentCount(const std::string& cmd) {
+    return "-ERR wrong number of arguments for '" + cmd + "' command\r\n";
+}
+
+std::string handlePing(const CommandArgs& tokens) {
+    if (tokens.size() != 1) return wrongArgumentCount("PING");
+    return "+PONG\r\n";
+}
+
+std::string handleEcho(const CommandArgs& tokens) {
+    if (tokens.size() != 2) return wrongArgumentCount("ECHO");
+    return "+" + tokens[1] + "\r\n";
+}
+
+std::string handleFlushAll(RedisDatabase& db) {
+    db.flushAll();
+    return "+OK\r\n";
+}
+
+std::string handleSet(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 3) return wrongArgumentCount("SET");
+    db.set(tokens[1], tokens[2]);
+    return "+OK\r\n";
+}
+
+std::string handleGet(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 2) return wrongArgumentCount("GET");
+    std::string value;
+    if (!db.get(tokens[1], value)) return "$-1\r\n";
+
+    std::ostringstream response;
+    response << "$" << value.size() << "\r\n" << value << "\r\n";
+    return response.str();
+}
+
+std::string handleKeys(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 1) return wrongArgumentCount("KEYS");
+    const auto allKeys = db.keys();
+    std::ostringstream response;
+    response << "*" << allKeys.size() << "\r\n";
+    for (const auto& key : allKeys) {
+        response << "$" << key.size() << "\r\n" << key << "\r\n";
+    }
+    return response.str();
+}
+
+std::string handleType(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 2) return wrongArgumentCount("TYPE");
+    return "+" + db.type(tokens[1]) + "\r\n";
+}
+
+std::string handleDel(RedisDatabase& db, const CommandArgs& tokens, const std::string& cmd) {
+    if (tokens.size() != 2) return wrongArgumentCount(cmd);
+    return db.del(tokens[1]) ? ":1\r\n" : ":0\r\n";
+}
+
+std::string handleExpire(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 3) return wrongArgumentCount("EXPIRE");
+    const int seconds = std::stoi(tokens[2]);
+    return db.expire(tokens[1], seconds) ? ":1\r\n" : ":0\r\n";
+}
+
+std::string handleRename(RedisDatabase& db, const CommandArgs& tokens) {
+    if (tokens.size() != 3) return wrongArgumentCount("RENAME");
+    return db.rename(tokens[1], tokens[2]) ? "+OK\r\n" : "-ERR no such key\r\n";
+}
+
+}  // namespace
+
 RedisCommandHandler::RedisCommandHandler() = default;
 
 RedisCommandHandler::~RedisCommandHandler() = default;
 
 std::string RedisCommandHandler::processCommand(const std::string& commandLine) {
-    // TODO: dispatch on parseRespCommand(commandLine)[0]
-    // use resp protocal parser
-    auto tokens = parseRespCommand(commandLine);
+    const auto tokens = parseRespCommand(commandLine);
     if (tokens.empty()) return "-ERR empty command\r\n";
 
     std::cout << "Received command: " << commandLine << std::endl;
 
-    // for debug
-    //  for (auto& t : tokens) {
-    //      std::cout << t << std::endl;
-    //  }
-
     std::string cmd = tokens[0];
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
-    std::ostringstream response;
-
-    // connect to database
     RedisDatabase& db = RedisDatabase::getInstance();
 
-    // check command and arguments
-    if (cmd == "PING") {
-        if (tokens.size() == 1) {
-            response << "+PONG\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for 'PING' command\r\n";
-        }
-    } else if (cmd == "ECHO") {
-        if (tokens.size() == 2) {
-            response << "+" << tokens[1] << "\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for 'ECHO' command\r\n";
-        }
-    } else if (cmd == "FLUSHALL") {
-        db.flushAll();
-        response << "+OK\r\n";
-    }
-    // key valuse operations
-    else if (cmd == "SET") {
-        if (tokens.size() == 3) {
-            db.set(tokens[1], tokens[2]);
-            response << "+OK\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for 'SET' command\r\n";
-        }
-    } else if (cmd == "GET") {
-        if (tokens.size() == 2) {
-            std::string value;
-            if (db.get(tokens[1], value)) {
-                response << "$" << value.size() << "\r\n" << value << "\r\n";
-            } else {
-                response << "$-1\r\n";
-            }
-        } else {
-            response << "-ERR wrong number of arguments for 'GET' command\r\n";
-        }
-    } else if (cmd == "KEYS") {
-        if (tokens.size() == 1) {
-            auto allKeys = db.keys();
-            response << "*" << allKeys.size() << "\r\n";
-            for (const auto& key : allKeys) {
-                response << "$" << key.size() << "\r\n" << key << "\r\n";
-            }
-        } else {
-            response << "-ERR wrong number of arguments for 'KEYS' command\r\n";
-        }
-    } else if (cmd == "TYPE") {
-        if (tokens.size() == 2) {
-            std::string type = db.type(tokens[1]);
-            response << "+" << type << "\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for 'TYPE' command\r\n";
-        }
-    } else if (cmd == "DEL" || cmd == "UNLINK") {
-        if (tokens.size() == 2) {
-            bool deleted = db.del(tokens[1]);
-            response << ":" << (deleted ? 1 : 0) << "\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for '" << cmd << "' command\r\n";
-        }
-    } else if (cmd == "EXPIRE") {
-        if (tokens.size() == 3) {
-            std::string key = tokens[1];
-            int seconds = std::stoi(tokens[2]);
-            bool success = db.expire(key, seconds);
-            response << ":" << (success ? 1 : 0) << "\r\n";
-        } else {
-            response << "-ERR wrong number of arguments for 'EXPIRE' command\r\n";
-        }
-    } else if (cmd == "RENAME") {
-        if (tokens.size() == 3) {
-            bool success = db.rename(tokens[1], tokens[2]);
-            response << (success ? "+OK\r\n" : "-ERR no such key\r\n");
-        } else {
-            response << "-ERR wrong number of arguments for 'RENAME' command\r\n";
-        }
-    } else {
-        response << "-ERR unknown command '" << cmd << "'\r\n";
-    }
-
-    return response.str();
+    if (cmd == "PING") return handlePing(tokens);
+    if (cmd == "ECHO") return handleEcho(tokens);
+    if (cmd == "FLUSHALL") return handleFlushAll(db);
+    if (cmd == "SET") return handleSet(db, tokens);
+    if (cmd == "GET") return handleGet(db, tokens);
+    if (cmd == "KEYS") return handleKeys(db, tokens);
+    if (cmd == "TYPE") return handleType(db, tokens);
+    if (cmd == "DEL" || cmd == "UNLINK") return handleDel(db, tokens, cmd);
+    if (cmd == "EXPIRE") return handleExpire(db, tokens);
+    if (cmd == "RENAME") return handleRename(db, tokens);
+    return "-ERR unknown command '" + cmd + "'\r\n";
 }

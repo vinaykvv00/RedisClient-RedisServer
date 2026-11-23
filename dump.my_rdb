@@ -1,0 +1,7 @@
+K name Vinay
+K city Bengaluru
+L fruits apple banana mango
+L vegetables carrot tomato cucumber
+H user:100 name Vinay age 25 city Bengaluru email vinay@example.com
+H user:101 name Alice age 30 city Mumbai email alice@example.com
+H user:102 name Bob age 28 city Delhi email bob@example.com
